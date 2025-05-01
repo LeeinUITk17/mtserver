@@ -1,0 +1,210 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+// --- Enums ---
+
+enum OrderStatus {
+  pending
+  processing
+  completed
+  cancelled
+}
+
+// --- Models ---
+
+
+
+model User {
+  id          String    @id @default(uuid()) // uuid [pk] -> String @id @default(uuid())
+  username    String    @unique @db.VarChar(50) // string [unique, not null] -> String @unique @db.VarChar(50)
+  email       String    @unique @db.VarChar(100) // string [unique, not null]
+  password    String    @db.VarChar(255) // string [not null]
+  fullName    String?   @map("full_name") @db.VarChar(255) // string (nullable) -> String?
+  avatar      String?   @db.VarChar(255) // string (nullable)
+  createdAt   DateTime  @default(now()) @map("created_at") // timestamp [default: `now()`, not null] -> DateTime @default(now())
+  updatedAt   DateTime  @updatedAt @map("updated_at") // timestamp [default: `now()`, not null] -> DateTime @updatedAt
+
+  // Relationships (Inverse relationships are automatically added by Prisma, but explicitly defining them is good practice)
+  posts       Post[]
+  orders      Order[]
+  postRatings PostRating[]
+  tokens     Token[]
+
+  @@map("users") // Maps model name to table name in the database
+}
+
+model Token {
+  id           String      @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  plants      Plant[]
+
+  @@map("categories")
+}
+
+model Plant {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2) // number [not null] -> Decimal. Using Decimal for currency is recommended.
+  stock       Int // number [not null] -> Int
+  categoryId  String?  @map("category_id") // Foreign Key column
+  imageUrl    String?  @map("image_url") @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  category    Category?  @relation(fields: [categoryId], references: [id]) // Many-to-One relationship. Nullable because categoryId is nullable.
+  orderItems  OrderItem[]
+  images      Image[]
+
+  @@index([categoryId]) // Index based on dbdiagram
+  @@map("plants")
+}
+
+model Post {
+  id          String   @id @default(uuid())
+  title       String   @db.VarChar(255)
+  content     String?  @db.Text
+  userId      String   @map("user_id") // Foreign Key column (not null)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  rating      Int      @default(0) // number [default: 0] -> Int @default(0)
+
+  // Relationships
+  user        User       @relation(fields: [userId], references: [id]) // Many-to-One (not nullable)
+  images      Image[]
+  postRatings PostRating[]
+
+  @@index([userId]) // Index based on dbdiagram
+  @@map("posts")
+}
+
+model PostRating {
+  id          String   @id @default(uuid())
+  postId      String   @map("post_id") // Foreign Key column (not null)
+  userId      String   @map("user_id") // Foreign Key column (not null)
+  rating      Int // number [not null] (e.g., 1 for upvote/downvote value)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relationships
+  post        Post     @relation(fields: [postId], references: [id]) // Many-to-One (not nullable)
+  user        User     @relation(fields: [userId], references: [id]) // Many-to-One (not nullable)
+
+  @@unique([postId, userId]) // Composite unique constraint based on dbdiagram
+
+  @@map("post_ratings")
+}
+
+model Image {
+  id           String   @id @default(uuid())
+  url          String   @db.VarChar(255) // string [not null]
+  plantId      String?  @map("plant_id") // Foreign Key column (nullable)
+  postId       String?  @map("post_id") // Foreign Key column (nullable)
+  testimonialId String?  @map("testimonial_id") // Foreign Key column (nullable)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relationships (nullable relations corresponding to nullable foreign keys)
+  plant        Plant?      @relation(fields: [plantId], references: [id])
+  post         Post?       @relation(fields: [postId], references: [id])
+  testimonial  Testimonial? @relation(fields: [testimonialId], references: [id])
+
+  @@index([plantId]) // Index based on dbdiagram
+  @@index([postId]) // Index based on dbdiagram
+  @@index([testimonialId]) // Index based on dbdiagram
+  @@map("images")
+}
+
+model Testimonial {
+  id           String   @id @default(uuid())
+  customerName String   @map("customer_name") @db.VarChar(255) // string [not null]
+  customerTitle String?  @map("customer_title") @db.VarChar(255) // string (nullable)
+  content      String   @db.Text // string [not null]
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relationships
+  images       Image[]
+
+  @@map("testimonials")
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id") // Foreign Key column (not null)
+  orderDate       DateTime    @default(now()) @map("order_date")
+  totalAmount     Decimal     @db.Decimal(10, 2) @map("total_amount") // number [not null] -> Decimal. Using Decimal for currency.
+  status          OrderStatus @default(pending) // Enum OrderStatus
+  shippingAddress String?     @map("shipping_address") @db.Text // string (nullable)
+  billingAddress  String?     @map("billing_address") @db.Text // string (nullable)
+
+  // Relationships
+  user            User        @relation(fields: [userId], references: [id]) // Many-to-One (not nullable)
+  orderItems      OrderItem[]
+
+  @@index([userId]) // Index based on dbdiagram
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String  @map("order_id") // Foreign Key column (not null)
+  plantId   String  @map("plant_id") // Foreign Key column (not null)
+  quantity  Int // number [not null] -> Int
+  price     Decimal @db.Decimal(10, 2) // number [not null] (Giá tại thời điểm order) -> Decimal. Corrected from nullable to not null based on common practice for order items.
+
+  // Relationships
+  order     Order  @relation(fields: [orderId], references: [id]) // Many-to-One (not nullable)
+  plant     Plant  @relation(fields: [plantId], references: [id]) // Many-to-One (not nullable)
+
+  @@index([orderId]) // Index based on dbdiagram
+  @@index([plantId]) // Index based on dbdiagram
+  @@map("order_items")
+}
+
+model Gallery {
+  id          String   @id @default(uuid())
+  title       String   @db.VarChar(255) // string [not null]
+  description String?  @db.Text // string (nullable)
+
+  // Relationships
+  galleryImages GalleryImage[]
+
+  @@map("galleries")
+}
+
+model GalleryImage {
+  id         String   @id @default(uuid())
+  galleryId  String   @map("gallery_id") // Foreign Key column (not null)
+  imageUrl   String   @map("image_url") @db.VarChar(255) // string [not null]
+
+  // Relationships
+  gallery    Gallery  @relation(fields: [galleryId], references: [id]) // Many-to-One (not nullable)
+
+  @@index([galleryId]) // Index based on dbdiagram
+  @@map("gallery_images")
+}

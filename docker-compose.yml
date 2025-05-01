@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: mt-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mt_detection
+    ports:
+      - "5432:5432"
+    volumes:
+      - mt_postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: mt-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: mrtaivietbac@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: tester
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+     # --- Service AI Python (Thêm mới) ---
+volumes:
+  mt_postgres_data:
