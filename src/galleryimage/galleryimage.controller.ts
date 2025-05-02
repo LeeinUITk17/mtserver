@@ -42,4 +42,8 @@ export class GalleryImageController {
   async remove(@Param('id') id: string) {
     return this.galleryImageService.remove(id);
   }
+  @Post('bulk')
+  async bulkCreate(@Body() createGalleryImageDtos: CreateGalleryImageDto[]) {
+    return this.galleryImageService.bulkCreate(createGalleryImageDtos);
+  }
 }

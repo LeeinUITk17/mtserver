@@ -42,4 +42,8 @@ export class CategoryController {
   async remove(@Param('id') id: string) {
     return this.categoryService.remove(id);
   }
+  @Post('bulk')
+  async bulkCreate(@Body() createCategoryDtos: CreateCategoryDto[]) {
+    return this.categoryService.bulkCreate(createCategoryDtos);
+  }
 }

@@ -42,4 +42,8 @@ export class PlantController {
   async remove(@Param('id') id: string) {
     return this.plantService.remove(id);
   }
+  @Post('bulk')
+  async bulkCreate(@Body() createPlantDtos: CreatePlantDto[]) {
+    return this.plantService.bulkCreate(createPlantDtos);
+  }
 }

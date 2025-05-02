@@ -51,4 +51,10 @@ export class CategoryService {
       where: { id },
     });
   }
+  async bulkCreate(createCategoryDtos: CreateCategoryDto[]) {
+    return this.prisma.category.createMany({
+      data: createCategoryDtos,
+      skipDuplicates: true,
+    });
+  }
 }

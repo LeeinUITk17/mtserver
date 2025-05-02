@@ -51,4 +51,10 @@ export class PlantService {
       where: { id },
     });
   }
+  async bulkCreate(createPlantDtos: CreatePlantDto[]) {
+    return this.prisma.plant.createMany({
+      data: createPlantDtos,
+      skipDuplicates: true,
+    });
+  }
 }

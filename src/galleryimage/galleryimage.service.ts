@@ -51,4 +51,10 @@ export class GalleryImageService {
       where: { id },
     });
   }
+  async bulkCreate(createGalleryImageDtos: CreateGalleryImageDto[]) {
+    return this.prisma.galleryImage.createMany({
+      data: createGalleryImageDtos,
+      skipDuplicates: true,
+    });
+  }
 }
