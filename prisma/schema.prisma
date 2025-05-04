@@ -94,7 +94,7 @@ model Post {
   userId      String   @map("user_id") // Foreign Key column (not null)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  rating      Int      @default(0) // number [default: 0] -> Int @default(0)
+  rating      RateLevel @default(low)
 
   // Relationships
   user        User       @relation(fields: [userId], references: [id]) // Many-to-One (not nullable)
@@ -103,6 +103,12 @@ model Post {
 
   @@index([userId]) // Index based on dbdiagram
   @@map("posts")
+}
+
+enum RateLevel {
+  low
+  medium
+  high
 }
 
 model PostRating {
