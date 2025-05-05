@@ -12,6 +12,9 @@ import {
   HttpStatus,
   Logger,
   ParseUUIDPipe,
+  Query,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PlantService } from './plant.service';
@@ -73,8 +76,16 @@ export class PlantController {
   }
 
   @Get()
-  async findAll() {
-    return this.plantService.findAll();
+  async findAll(
+    @Query(
+      'limit',
+      new DefaultValuePipe(undefined),
+      new ParseIntPipe({ optional: true }),
+    )
+    limit?: number,
+  ) {
+    const safeLimit = limit && limit > 0 && limit <= 50 ? limit : undefined;
+    return this.plantService.findAll(safeLimit);
   }
 
   @Get(':id')

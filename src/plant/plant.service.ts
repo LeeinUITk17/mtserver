@@ -101,9 +101,10 @@ export class PlantService {
     }
   }
 
-  async findAll() {
-    this.logger.log('Finding all plants');
+  async findAll(limit?: number) {
+    this.logger.log(`Finding all plants${limit ? ` (limit: ${limit})` : ''}`);
     return this.prisma.plant.findMany({
+      take: limit,
       include: {
         images: true,
         category: true,

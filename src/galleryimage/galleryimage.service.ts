@@ -18,8 +18,10 @@ export class GalleryImageService {
     });
   }
 
-  async findAll() {
-    return this.prisma.galleryImage.findMany();
+  async findAll(limit?: number) {
+    return this.prisma.galleryImage.findMany({
+      take: limit,
+    });
   }
 
   async findOne(id: string) {

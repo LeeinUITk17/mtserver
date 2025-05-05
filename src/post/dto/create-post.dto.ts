@@ -1,5 +1,11 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
-
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
+import { RateLevel } from '@prisma/client';
 export class CreatePostDto {
   @IsNotEmpty()
   @IsString()
@@ -13,4 +19,8 @@ export class CreatePostDto {
   @IsNotEmpty()
   @IsString()
   userId: string;
+
+  @IsOptional()
+  @IsEnum(RateLevel)
+  rating?: RateLevel = RateLevel.low;
 }

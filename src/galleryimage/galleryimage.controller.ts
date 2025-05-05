@@ -12,6 +12,9 @@ import {
   HttpException,
   HttpStatus,
   NotFoundException,
+  Query,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { GalleryImageService } from './galleryimage.service';
@@ -47,8 +50,16 @@ export class GalleryImageController {
   }
 
   @Get()
-  async findAll() {
-    return this.galleryImageService.findAll();
+  async findAll(
+    @Query(
+      'limit',
+      new DefaultValuePipe(undefined),
+      new ParseIntPipe({ optional: true }),
+    )
+    limit?: number,
+  ) {
+    const safeLimit = limit && limit > 0 && limit <= 50 ? limit : undefined;
+    return this.galleryImageService.findAll(safeLimit);
   }
 
   @Get(':id')
