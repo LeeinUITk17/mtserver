@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateGalleryImageDto {
   @IsNotEmpty()
@@ -8,5 +14,10 @@ export class CreateGalleryImageDto {
   @IsNotEmpty()
   @IsString()
   @MaxLength(255)
+  @IsUrl()
   imageUrl: string;
+
+  @IsOptional()
+  @IsString()
+  publicId: string;
 }

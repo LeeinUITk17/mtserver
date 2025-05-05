@@ -1,10 +1,13 @@
+import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsDecimal,
   IsInt,
   MaxLength,
+  IsUrl,
+  Min,
+  IsNumber,
 } from 'class-validator';
 
 export class CreatePlantDto {
@@ -18,7 +21,9 @@ export class CreatePlantDto {
   description?: string;
 
   @IsNotEmpty()
-  @IsDecimal()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Type(() => Number)
+  @Min(0)
   price: number;
 
   @IsNotEmpty()
@@ -32,5 +37,6 @@ export class CreatePlantDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  @IsUrl()
   imageUrl?: string;
 }

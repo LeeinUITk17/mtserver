@@ -134,9 +134,10 @@ model Image {
   postId       String?  @map("post_id") // Foreign Key column (nullable)
   testimonialId String?  @map("testimonial_id") // Foreign Key column (nullable)
   createdAt    DateTime @default(now()) @map("created_at")
+  publicId     String?  @map("public_id") 
 
   // Relationships (nullable relations corresponding to nullable foreign keys)
-  plant        Plant?      @relation(fields: [plantId], references: [id])
+  plant        Plant?      @relation(fields: [plantId], references: [id], onDelete: Cascade)
   post         Post?       @relation(fields: [postId], references: [id])
   testimonial  Testimonial? @relation(fields: [testimonialId], references: [id])
 
@@ -207,10 +208,9 @@ model GalleryImage {
   id         String   @id @default(uuid())
   galleryId  String   @map("gallery_id") // Foreign Key column (not null)
   imageUrl   String   @map("image_url") @db.VarChar(255) // string [not null]
-
+  publicId   String?  @map("public_id")
   // Relationships
   gallery    Gallery  @relation(fields: [galleryId], references: [id]) // Many-to-One (not nullable)
-
   @@index([galleryId]) // Index based on dbdiagram
   @@map("gallery_images")
 }

@@ -12,6 +12,10 @@ export class CreateImageDto {
 
   @IsOptional()
   @IsString()
+  publicId?: string;
+
+  @IsOptional()
+  @IsString()
   postId?: string;
 
   @IsOptional()
