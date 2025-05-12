@@ -108,4 +108,17 @@ export class PostController {
     this.logger.log(`Received request to delete post ${id}`);
     return this.postService.remove(id);
   }
+  @Get('slug/:slug')
+  async findBySlug(@Param('slug') slug: string) {
+    this.logger.log(`Finding plant with slug: ${slug}`);
+    const plant = await this.postService.findBySlug(slug);
+    if (!plant) {
+      this.logger.warn(`Plant with slug ${slug} not found`);
+      throw new HttpException(
+        `Plant with slug ${slug} not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return plant;
+  }
 }

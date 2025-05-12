@@ -39,4 +39,8 @@ export class CreatePlantDto {
   @MaxLength(255)
   @IsUrl()
   imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  slug?: string;
 }

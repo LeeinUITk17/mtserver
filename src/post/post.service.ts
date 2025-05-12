@@ -9,6 +9,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Prisma, RateLevel } from '@prisma/client';
+import slugify from 'slugify';
 
 @Injectable()
 export class PostService {
@@ -18,6 +19,32 @@ export class PostService {
     private readonly prisma: PrismaService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
+
+  private async generateUniqueSlug(
+    title: string,
+    retryCount = 0,
+  ): Promise<string> {
+    let baseSlug = slugify(title, {
+      lower: true,
+      strict: true,
+      replacement: '-',
+    });
+    if (retryCount > 0) {
+      baseSlug = `${baseSlug}-${retryCount}`;
+    }
+
+    const existingPost = await this.prisma.post.findUnique({
+      where: { slug: baseSlug },
+    });
+
+    if (existingPost) {
+      this.logger.warn(
+        `Slug "${baseSlug}" already exists. Generating a new one.`,
+      );
+      return this.generateUniqueSlug(title, retryCount + 1); // Recurse with incremented count
+    }
+    return baseSlug;
+  }
 
   async create(
     createPostDto: CreatePostDto,
@@ -32,11 +59,15 @@ export class PostService {
       this.logger.error(`User with ID ${createPostDto.userId} not found.`);
       throw new BadRequestException(`Invalid user ID provided.`);
     }
-
+    const slug = await this.generateUniqueSlug(createPostDto.title);
+    this.logger.log(
+      `Generated slug: ${slug} for title: "${createPostDto.title}"`,
+    );
     try {
       const createdPost = await this.prisma.post.create({
         data: {
           ...createPostDto,
+          slug: slug,
           images: imageDatas
             ? {
                 createMany: {
@@ -103,15 +134,36 @@ export class PostService {
     }
     return post;
   }
+  async findBySlug(slug: string) {
+    this.logger.log(`Finding post with slug: ${slug}`);
+    const post = await this.prisma.post.findUnique({
+      where: { slug },
+      include: {
+        images: true,
+        user: { select: { id: true, username: true, email: true } },
+      },
+    });
+    if (!post) {
+      this.logger.warn(`Post with slug ${slug} not found`);
+      throw new NotFoundException(`Post with slug ${slug} not found`);
+    }
+    return post;
+  }
 
   async update(id: string, updatePostDto: UpdatePostDto) {
     this.logger.log(`Updating post with ID: ${id}`);
-    await this.findOne(id);
+    const existingPost = await this.findOne(id);
+    const dataToUpdate: Prisma.PostUpdateInput = { ...updatePostDto };
+    if (updatePostDto.title && updatePostDto.title !== existingPost.title) {
+      this.logger.log(`Title changed for post ${id}. Regenerating slug.`);
+      dataToUpdate.slug = await this.generateUniqueSlug(updatePostDto.title);
+      this.logger.log(`New slug for post ${id}: ${dataToUpdate.slug}`);
+    }
 
     try {
       const updatedPost = await this.prisma.post.update({
         where: { id },
-        data: updatePostDto,
+        data: dataToUpdate,
         include: {
           images: true,
           user: { select: { id: true, username: true, email: true } },

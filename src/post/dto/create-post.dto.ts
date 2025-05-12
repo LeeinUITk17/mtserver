@@ -23,4 +23,8 @@ export class CreatePostDto {
   @IsOptional()
   @IsEnum(RateLevel)
   rating?: RateLevel = RateLevel.low;
+
+  @IsOptional()
+  @IsString()
+  slug?: string;
 }

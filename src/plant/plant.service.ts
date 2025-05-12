@@ -9,6 +9,7 @@ import { CreatePlantDto } from './dto/create-plant.dto';
 import { UpdatePlantDto } from './dto/update-plant.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Prisma } from '@prisma/client';
+import slugify from 'slugify';
 
 @Injectable()
 export class PlantService {
@@ -18,6 +19,31 @@ export class PlantService {
     private readonly prisma: PrismaService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
+  private async generateUniqueSlug(
+    name: string,
+    retryCount = 0,
+  ): Promise<string> {
+    let baseSlug = slugify(name, {
+      lower: true,
+      strict: true,
+      replacement: '-',
+    });
+    if (retryCount > 0) {
+      baseSlug = `${baseSlug}-${retryCount}`;
+    }
+
+    const existingPost = await this.prisma.plant.findUnique({
+      where: { slug: baseSlug },
+    });
+
+    if (existingPost) {
+      this.logger.warn(
+        `Slug "${baseSlug}" already exists. Generating a new one.`,
+      );
+      return this.generateUniqueSlug(name, retryCount + 1);
+    }
+    return baseSlug;
+  }
 
   async create(
     createPlantDto: CreatePlantDto,
@@ -51,6 +77,10 @@ export class PlantService {
         );
       }
     }
+    const slug = await this.generateUniqueSlug(createPlantDto.name);
+    this.logger.log(
+      `Generated slug: ${slug} for title: "${createPlantDto.name}"`,
+    );
 
     try {
       const createdPlant = await this.prisma.plant.create({
@@ -61,6 +91,7 @@ export class PlantService {
           stock: stockAsInt,
           categoryId: createPlantDto.categoryId,
           imageUrl: createPlantDto.imageUrl,
+          slug: slug,
           images: imageDatas
             ? {
                 createMany: {
@@ -128,14 +159,35 @@ export class PlantService {
     }
     return plant;
   }
+  async findBySlug(slug: string) {
+    this.logger.log(`Finding plant with slug: ${slug}`);
+    const plant = await this.prisma.plant.findUnique({
+      where: { slug },
+      include: {
+        images: true,
+        category: true,
+      },
+    });
+    if (!plant) {
+      this.logger.warn(`Plant with slug ${slug} not found`);
+      throw new NotFoundException(`Plant with slug ${slug} not found`);
+    }
+    return plant;
+  }
 
   async update(id: string, updatePlantDto: UpdatePlantDto) {
     this.logger.log(`Updating plant with ID: ${id}`);
-    await this.findOne(id);
+    const existingPlant = await this.findOne(id);
+    const dataToUpdate: Prisma.PostUpdateInput = { ...updatePlantDto };
+    if (updatePlantDto.name && updatePlantDto.name !== existingPlant.name) {
+      this.logger.log(`Title changed for post ${id}. Regenerating slug.`);
+      dataToUpdate.slug = await this.generateUniqueSlug(updatePlantDto.name);
+      this.logger.log(`New slug for post ${id}: ${dataToUpdate.slug}`);
+    }
     try {
       const updatedPlant = await this.prisma.plant.update({
         where: { id },
-        data: updatePlantDto,
+        data: dataToUpdate,
         include: { images: true },
       });
       this.logger.log(`Plant ${id} updated successfully.`);

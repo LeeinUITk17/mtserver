@@ -77,6 +77,7 @@ model Plant {
   imageUrl    String?  @map("image_url") @db.VarChar(255)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  slug        String?   @unique
 
   // Relationships
   category    Category?  @relation(fields: [categoryId], references: [id]) // Many-to-One relationship. Nullable because categoryId is nullable.
@@ -95,6 +96,7 @@ model Post {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   rating      RateLevel @default(low)
+  slug        String?    @unique
 
   // Relationships
   user        User       @relation(fields: [userId], references: [id]) // Many-to-One (not nullable)

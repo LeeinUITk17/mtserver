@@ -112,4 +112,17 @@ export class PlantController {
   async bulkCreate(@Body() createPlantDtos: CreatePlantDto[]) {
     return this.plantService.bulkCreate(createPlantDtos);
   }
+  @Get('slug/:slug')
+  async findBySlug(@Param('slug') slug: string) {
+    this.logger.log(`Finding plant with slug: ${slug}`);
+    const plant = await this.plantService.findBySlug(slug);
+    if (!plant) {
+      this.logger.warn(`Plant with slug ${slug} not found`);
+      throw new HttpException(
+        `Plant with slug ${slug} not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return plant;
+  }
 }
